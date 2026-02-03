@@ -1,4 +1,3 @@
-
 /**
  * @typedef {{ id: number, title: string, body: string }} Post
  */

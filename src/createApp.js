@@ -5,7 +5,6 @@ import morgan from 'morgan';
 import { postsRouter } from '#routes/posts.routes';
 import { errorHandler } from '#middleware/errorHandler';
 
-
 /**
  * Factory that creates the Express app with injected dependencies.
  * This is the pattern that makes testing easy with Supertest.
@@ -29,7 +28,7 @@ export function createApp({ repos }) {
 
   // Health check endpoint
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', message: 'App is running correctly'});
+    res.json({ status: 'ok', message: 'App is running correctly' });
   });
 
   // Attach repositories to res.locals so controllers can access them
