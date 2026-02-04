@@ -20,7 +20,7 @@ export function createPostsRepo() {
     list({ limit = 20, offset = 0} = {}) {
       const total = posts.length;
 
-      // TODO: update this to the proper function
+      // TODO: update this to the proper function once we have databases
       const filteredPosts = posts.slice(offset, offset + limit);
 
       return { items: filteredPosts, total };

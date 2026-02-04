@@ -8,8 +8,10 @@ export async function createRepos() {
   // Lazy import keeps this minimal for Day 1
   // (you can also use a direct import if you prefer).
   const { createPostsRepo } = await import('./posts.repo.js');
+  const { createCommentsRepo } = await import('./comments.repo.js');
 
   return {
     posts: createPostsRepo(),
+    comments: createCommentsRepo(),
   };
 }
