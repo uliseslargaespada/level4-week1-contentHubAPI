@@ -1,4 +1,3 @@
-
 /**
  * Day 2: Extend the in-memory repo with getById and paginated list.
  *
@@ -17,7 +16,7 @@ export function createPostsRepo() {
   let nextId = 1;
 
   return {
-    list({ limit = 20, offset = 0} = {}) {
+    list({ limit = 20, offset = 0 } = {}) {
       const total = posts.length;
 
       // TODO: update this to the proper function once we have databases
