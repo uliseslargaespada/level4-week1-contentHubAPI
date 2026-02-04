@@ -18,6 +18,11 @@ export function createPostsRepo() {
       return posts;
     },
 
+    // Get a post by Id
+    getById(id) {
+      return posts.find((post) => post.id === id);
+    },
+
     create({ title, body }) {
       const post = { id: nextId++, title, body };
       posts.push(post);
