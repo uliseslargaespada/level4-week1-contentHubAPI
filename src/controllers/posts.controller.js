@@ -1,13 +1,19 @@
 import { notFound } from '#utils/httpErrors';
 import { ensureBodyFields } from '#utils/guard';
+import { parsePagination } from '#utils/pagination';
 
 /**
  * GET /posts
  */
-export function listPosts(_req, res) {
+export function listPosts(req, res) {
   const { posts } = res.locals.repos;
 
-  res.json({ data: posts.list() });
+  const { limit, offset } = parsePagination(req.query);
+  const result = posts.list({ limit, offset });
+
+  return res.ok(result.items, {
+    pagination: { limit, offset, total: result.total },
+  });
 }
 
 /**
