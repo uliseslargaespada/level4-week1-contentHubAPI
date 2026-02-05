@@ -15,7 +15,6 @@ export function ensureEnv() {
   // Load the JWT variable
   const JWT_SECRET = process.env.JWT_SECRET ?? '';
 
-
   if (!Number.isFinite(PORT) || PORT <= 0) {
     throw new Error('Invalid PORT. Please set PORT to a valid number.');
   }

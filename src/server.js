@@ -8,7 +8,7 @@ const repos = await createRepos();
 // The main app
 const app = createApp({
   repos,
-  config: { JWT_SECRET: env.JWT_SECRET }
+  config: { JWT_SECRET: env.JWT_SECRET },
 });
 
 // Start the server

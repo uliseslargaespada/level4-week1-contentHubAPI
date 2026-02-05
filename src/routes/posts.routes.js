@@ -6,10 +6,7 @@ import {
   updatePost,
   deletePost,
 } from '#controllers/posts.controller';
-import {
-  listCommentsForPost,
-  createCommentForPost,
-} from '#controllers/comments.controller';
+import { listCommentsForPost, createCommentForPost } from '#controllers/comments.controller';
 import { requireAuth } from '#middleware/requireAuth';
 
 export const postsRouter = Router();
