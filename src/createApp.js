@@ -2,10 +2,13 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import { postsRouter } from '#routes/posts.routes';
 import { errorHandler } from '#middleware/errorHandler';
 import { notFoundHandler } from '#middleware/notFoundHandler';
 import { respond } from '#middleware/respond';
+
+import { postsRouter } from '#routes/posts.routes';
+import { authRouter } from '#routes/auth.routes';
+import { commentsRouter } from '#routes/comments.routes';
 
 /**
  * Factory that creates the Express app with injected dependencies.
@@ -46,6 +49,8 @@ export function createApp({ repos, config = {} }) {
 
   // Routes
   app.use('/posts', postsRouter);
+  app.use('/auth', authRouter);
+  app.use('/comments', commentsRouter);
 
   // Caught not defined routes with a specif message
   app.use(notFoundHandler);

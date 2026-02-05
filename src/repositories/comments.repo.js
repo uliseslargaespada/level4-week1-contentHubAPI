@@ -1,7 +1,7 @@
 /**
- * Day 2: in-memory comments, nested under posts.
+ * Day 3: add authorId and update/delete with ownership.
  *
- * @typedef {{ id: number, postId: number, body: string }} Comment
+ * @typedef {{ id: number, postId: number, body: string, authorId: number }} Comment
  */
 
 /**
@@ -23,10 +23,32 @@ export function createCommentsRepo() {
       return { items, total };
     },
 
+    getById(id) {
+      return comments.find((c) => c.id === id) ?? null;
+    },
+
     create({ postId, body }) {
       const comment = { id: nextId++, postId, body };
       comments.push(comment);
       return comment;
+    },
+
+    update({ id, body, authorId }) {
+      const comment = comments.find((c) => c.id === id) ?? null;
+      if (!comment) return null;
+      if (comment.authorId !== authorId) return 'forbidden';
+
+      comment.body = body;
+      return comment;
+    },
+
+    delete({ id, authorId }) {
+      const idx = comments.findIndex((c) => c.id === id);
+      if (idx === -1) return null;
+      if (comments[idx].authorId !== authorId) return 'forbidden';
+
+      comments.splice(idx, 1);
+      return true;
     },
   };
 }
