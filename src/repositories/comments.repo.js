@@ -1,47 +1,75 @@
 /**
- * Day 3: add authorId and update/delete with ownership.
+ * SQLite-backed comments repository.
  *
- * @typedef {{ id: number, postId: number, body: string, authorId: number }} Comment
+ * @param {import('node:sqlite').DatabaseSync} db
  */
+export function createCommentsRepo(db) {
+  const stmtListForPost = db.prepare(`
+    SELECT id, post_id AS postId, body, author_id AS authorId, created_at AS createdAt, updated_at AS updatedAt
+    FROM comments
+    WHERE post_id = ?
+    ORDER BY id ASC
+    LIMIT ? OFFSET ?
+  `);
 
-export function createCommentsRepo() {
-  /** @type {Comment[]} */
-  const comments = [];
-  let nextId = 1;
+  const stmtCountForPost = db.prepare(`
+    SELECT COUNT(*) AS total
+    FROM comments
+    WHERE post_id = ?
+  `);
+
+  const stmtInsert = db.prepare(`
+    INSERT INTO comments (post_id, body, author_id)
+    VALUES (?, ?, ?)
+  `);
+
+  const stmtUpdate = db.prepare(`
+    UPDATE comments
+    SET body = ?, updated_at = datetime('now')
+    WHERE id = ? AND author_id = ?
+  `);
+
+  const stmtDelete = db.prepare(`
+    DELETE FROM comments
+    WHERE id = ? AND author_id = ?
+  `);
+
+  const stmtGetById = db.prepare(`
+    SELECT id, post_id AS postId, body, author_id AS authorId, created_at AS createdAt, updated_at AS updatedAt
+    FROM comments
+    WHERE id = ?
+    LIMIT 1
+  `);
 
   return {
     listForPost(postId, { limit = 20, offset = 0 } = {}) {
-      const all = comments.filter((c) => c.postId === postId);
-      const total = all.length;
-      const items = all.slice(offset, offset + limit);
+      const total = Number(stmtCountForPost.get(postId).total);
+      const items = stmtListForPost.all(postId, limit, offset);
       return { items, total };
     },
 
-    getById(id) {
-      return comments.find((c) => c.id === id) ?? null;
-    },
-
     create({ postId, body, authorId }) {
-      const comment = { id: nextId++, postId, body, authorId };
-      comments.push(comment);
-      return comment;
+      const info = stmtInsert.run(postId, body, authorId);
+      return stmtGetById.get(Number(info.lastInsertRowid));
     },
 
     update({ id, body, authorId }) {
-      const comment = comments.find((c) => c.id === id) ?? null;
-      if (!comment) return null;
-      if (comment.authorId !== authorId) return 'forbidden';
-
-      comment.body = body;
-      return comment;
+      const info = stmtUpdate.run(body, id, authorId);
+      if (info.changes === 0) {
+        const exists = stmtGetById.get(id);
+        if (!exists) return null;
+        return 'forbidden';
+      }
+      return stmtGetById.get(id);
     },
 
     delete({ id, authorId }) {
-      const idx = comments.findIndex((c) => c.id === id);
-      if (idx === -1) return null;
-      if (comments[idx].authorId !== authorId) return 'forbidden';
-
-      comments.splice(idx, 1);
+      const info = stmtDelete.run(id, authorId);
+      if (info.changes === 0) {
+        const exists = stmtGetById.get(id);
+        if (!exists) return null;
+        return 'forbidden';
+      }
       return true;
     },
   };

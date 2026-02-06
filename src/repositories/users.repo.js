@@ -3,36 +3,28 @@
  *
  * @typedef {{ id: number, email: string, name: string, passwordHash: string }} User
  */
-export function createUsersRepo() {
+export function createUsersRepo(db) {
   /** @type {User[]} */
-  const users = [];
-  let nextId = 1;
+  const stmtInsert = db.prepare(`
+    INSERT INTO users (email, name, password_hash)
+    VALUES (?, ?, ?)
+  `);
+
+  const stmtByEmail = db.prepare(`
+    SELECT id, email, name, password_hash AS passwordHash
+    FROM users
+    WHERE email = ?
+    LIMIT 1
+  `);
 
   return {
-    /**
-     * @param {{ email: string, name: string, passwordHash: string }} data
-     * @returns {User}
-     */
-    create(data) {
-      const user = { id: nextId++, ...data };
-      users.push(user);
-      return user;
+    create({ email, name, passwordHash }) {
+      const info = stmtInsert.run(email, name, passwordHash);
+      return { id: Number(info.lastInsertRowid), email, name, passwordHash };
     },
 
-    /**
-     * @param {string} email
-     * @returns {User|null}
-     */
     findByEmail(email) {
-      return users.find((u) => u.email === email) ?? null;
-    },
-
-    /**
-     * @param {number} id
-     * @returns {User|null}
-     */
-    findById(id) {
-      return users.find((u) => u.id === id) ?? null;
+      return stmtByEmail.get(email) ?? null;
     },
   };
 }
