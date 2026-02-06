@@ -4,12 +4,6 @@
  * @typedef {{ id: number, postId: number, body: string, authorId: number }} Comment
  */
 
-/**
- * @typedef {Object} CommentsRepo
- * @property {(postId: number, opts?: {limit?: number, offset?: number}) => { items: Comment[], total: number }} listForPost
- * @property {(data: {postId: number, body: string}) => Comment} create
- */
-
 export function createCommentsRepo() {
   /** @type {Comment[]} */
   const comments = [];
@@ -27,8 +21,8 @@ export function createCommentsRepo() {
       return comments.find((c) => c.id === id) ?? null;
     },
 
-    create({ postId, body }) {
-      const comment = { id: nextId++, postId, body };
+    create({ postId, body, authorId }) {
+      const comment = { id: nextId++, postId, body, authorId };
       comments.push(comment);
       return comment;
     },
