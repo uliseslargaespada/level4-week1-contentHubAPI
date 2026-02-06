@@ -1,7 +1,7 @@
 /**
- * Day 2: Extend the in-memory repo with getById and paginated list.
+ * Day 3: add authorId and update/delete with ownership.
  *
- * @typedef {{ id: number, title: string, body: string }} Post
+ * @typedef {{ id: number, title: string, body: string, authorId: number }} Post
  */
 
 /**
@@ -30,10 +30,29 @@ export function createPostsRepo() {
       return posts.find((post) => post.id === id);
     },
 
-    create({ title, body }) {
-      const post = { id: nextId++, title, body };
+    create({ title, body, authorId }) {
+      const post = { id: nextId++, title, body, authorId };
       posts.push(post);
       return post;
+    },
+
+    update({ id, title, body, authorId }) {
+      const post = posts.find((p) => p.id === id) ?? null;
+      if (!post) return null;
+      if (post.authorId !== authorId) return 'forbidden';
+
+      post.title = title;
+      post.body = body;
+      return post;
+    },
+
+    delete({ id, authorId }) {
+      const idx = posts.findIndex((p) => p.id === id);
+      if (idx === -1) return null;
+      if (posts[idx].authorId !== authorId) return 'forbidden';
+
+      posts.splice(idx, 1);
+      return true;
     },
   };
 }
