@@ -18,7 +18,7 @@ export function requireAuth(req, _res, next) {
 
     const payload = verifyToken({ token, secret });
 
-    req.user = { id: Number(payload.sub) };
+    req.user = { id: payload.sub };
     return next();
   } catch {
     return next(unauthorized('Invalid token'));
