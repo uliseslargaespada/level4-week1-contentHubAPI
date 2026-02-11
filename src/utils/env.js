@@ -17,6 +17,9 @@ export function ensureEnv() {
 
   // Load DB PATH
   const DB_PATH = process.env.DB_PATH ?? '';
+  
+  // Load the DB config
+  const PRISMA_LOG_QUERIES = process.env.PRISMA_LOG_QUERIES ?? '';
 
   if (!Number.isFinite(PORT) || PORT <= 0) {
     throw new Error('Invalid PORT. Please set PORT to a valid number.');
@@ -32,5 +35,5 @@ export function ensureEnv() {
     throw new Error('Invalid DB_PATH. Please set the DB_PATH variable');
   }
 
-  return { PORT, JWT_SECRET };
+  return { PORT, JWT_SECRET, PRISMA_LOG_QUERIES };
 }

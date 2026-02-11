@@ -6,7 +6,7 @@ import { signToken } from '#utils/jwt';
 /**
  * POST /auth/register
  */
-export function registerUser(req, res) {
+export async function registerUser(req, res) {
   const { users } = res.locals.repos;
 
   ensureBodyFields(req.body, ['email', 'name', 'password']);
@@ -15,11 +15,13 @@ export function registerUser(req, res) {
   const name = String(req.body.name).trim();
   const password = String(req.body.password);
 
-  if (users.findByEmail(email)) {
+  const userExists = await users.findByEmail(email);
+
+  if (userExists) {
     throw conflict('Email already registered');
   }
 
-  const user = users.create({
+  const user = await users.create({
     email,
     name,
     passwordHash: hashPassword(password),
@@ -36,7 +38,7 @@ export function registerUser(req, res) {
 /**
  * POST /auth/login
  */
-export function loginUser(req, res) {
+export async function loginUser(req, res) {
   const { users } = res.locals.repos;
 
   ensureBodyFields(req.body, ['email', 'password']);
@@ -44,7 +46,7 @@ export function loginUser(req, res) {
   const email = String(req.body.email).toLowerCase().trim();
   const password = String(req.body.password);
 
-  const user = users.findByEmail(email);
+  const user = await users.findByEmail(email);
   if (!user) {
     throw unauthorized('Invalid credentials');
   }
