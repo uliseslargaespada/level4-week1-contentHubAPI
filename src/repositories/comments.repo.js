@@ -1,75 +1,81 @@
 /**
- * SQLite-backed comments repository.
+ * Comments repository backed by Prisma.
  *
- * @param {import('node:sqlite').DatabaseSync} db
+ * @param {import('@prisma/client').PrismaClient} prisma
  */
-export function createCommentsRepo(db) {
-  const stmtListForPost = db.prepare(`
-    SELECT id, post_id AS postId, body, author_id AS authorId, created_at AS createdAt, updated_at AS updatedAt
-    FROM comments
-    WHERE post_id = ?
-    ORDER BY id ASC
-    LIMIT ? OFFSET ?
-  `);
-
-  const stmtCountForPost = db.prepare(`
-    SELECT COUNT(*) AS total
-    FROM comments
-    WHERE post_id = ?
-  `);
-
-  const stmtInsert = db.prepare(`
-    INSERT INTO comments (post_id, body, author_id)
-    VALUES (?, ?, ?)
-  `);
-
-  const stmtUpdate = db.prepare(`
-    UPDATE comments
-    SET body = ?, updated_at = datetime('now')
-    WHERE id = ? AND author_id = ?
-  `);
-
-  const stmtDelete = db.prepare(`
-    DELETE FROM comments
-    WHERE id = ? AND author_id = ?
-  `);
-
-  const stmtGetById = db.prepare(`
-    SELECT id, post_id AS postId, body, author_id AS authorId, created_at AS createdAt, updated_at AS updatedAt
-    FROM comments
-    WHERE id = ?
-    LIMIT 1
-  `);
-
+export function createCommentsRepo(prisma) {
   return {
-    listForPost(postId, { limit = 20, offset = 0 } = {}) {
-      const total = Number(stmtCountForPost.get(postId).total);
-      const items = stmtListForPost.all(postId, limit, offset);
+    /**
+     * List comments for a given post.
+     *
+     * @param {string} postId
+     * @param {{ limit?: number, offset?: number }} params
+     */
+    async listForPost(postId, { limit = 50, offset = 0 } = {}) {
+      const [items, total] = await Promise.all([
+        prisma.comment.findMany({
+          where: { postId },
+          skip: offset,
+          take: limit,
+          orderBy: { createdAt: 'asc' },
+        }),
+        prisma.comment.count({ where: { postId } }),
+      ]);
+
       return { items, total };
     },
 
-    create({ postId, body, authorId }) {
-      const info = stmtInsert.run(postId, body, authorId);
-      return stmtGetById.get(Number(info.lastInsertRowid));
+    /**
+     * Get comment by id.
+     *
+     * @param {string} id
+     */
+    async getById(id) {
+      return prisma.comment.findUnique({ where: { id } });
     },
 
-    update({ id, body, authorId }) {
-      const info = stmtUpdate.run(body, id, authorId);
-      if (info.changes === 0) {
-        const exists = stmtGetById.get(id);
-        if (!exists) return null;
-        return 'forbidden';
-      }
-      return stmtGetById.get(id);
+    /**
+     * Create a comment.
+     *
+     * @param {{ postId: string, body: string, authorId: string }} data
+     */
+    async create({ postId, body, authorId }) {
+      return prisma.comment.create({
+        data: { postId, body, authorId },
+      });
     },
 
-    delete({ id, authorId }) {
-      const info = stmtDelete.run(id, authorId);
-      if (info.changes === 0) {
-        const exists = stmtGetById.get(id);
-        if (!exists) return null;
-        return 'forbidden';
-      }
+    /**
+     * Update a comment if exists and user owns it.
+     *
+     * Returns: updated | null | 'forbidden'
+     *
+     * @param {{ id: string, body: string, authorId: string }} data
+     */
+    async update({ id, body, authorId }) {
+      const existing = await prisma.comment.findUnique({ where: { id } });
+      if (!existing) return null;
+      if (existing.authorId !== authorId) return 'forbidden';
+
+      return prisma.comment.update({
+        where: { id },
+        data: { body },
+      });
+    },
+
+    /**
+     * Delete a comment if exists and user owns it.
+     *
+     * Returns: true | null | 'forbidden'
+     *
+     * @param {{ id: string, authorId: string }} data
+     */
+    async delete({ id, authorId }) {
+      const existing = await prisma.comment.findUnique({ where: { id } });
+      if (!existing) return null;
+      if (existing.authorId !== authorId) return 'forbidden';
+
+      await prisma.comment.delete({ where: { id } });
       return true;
     },
   };

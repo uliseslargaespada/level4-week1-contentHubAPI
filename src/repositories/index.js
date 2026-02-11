@@ -4,7 +4,7 @@
  *
  * @returns {{ posts: import('./posts.repo.js').PostsRepo }}
  */
-export async function createRepos(db) {
+export async function createRepos(prisma) {
   // Lazy import keeps this minimal for Day 1
   // (you can also use a direct import if you prefer).
   const { createPostsRepo } = await import('./posts.repo.js');
@@ -12,8 +12,8 @@ export async function createRepos(db) {
   const { createUsersRepo } = await import('./users.repo.js');
 
   return {
-    posts: createPostsRepo(db),
-    comments: createCommentsRepo(db),
-    users: createUsersRepo(db),
+    posts: createPostsRepo(prisma),
+    comments: createCommentsRepo(prisma),
+    users: createUsersRepo(prisma),
   };
 }

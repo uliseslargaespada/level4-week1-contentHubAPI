@@ -1,18 +1,11 @@
 import { ensureEnv } from '#utils/env';
 import { createApp } from '#app';
 import { createRepos } from '#repositories/index';
-import { openDatabase } from './db/database.js';
-import { runMigrations } from './db/migrate.js';
+import { prisma } from './db/prisma.js';
 
 const env = ensureEnv();
 
-// Open SQLite DB
-const db = openDatabase(env.DB_PATH);
-
-// Run Migrations
-runMigrations(db);
-
-const repos = await createRepos(db);
+const repos = await createRepos(prisma);
 
 // The main app
 const app = createApp({
@@ -24,3 +17,14 @@ const app = createApp({
 app.listen(env.PORT, () => {
   console.log(`ContentHub API listening on http://localhost:${env.PORT}`);
 });
+
+/**
+ * Graceful shutdown closes DB connections.
+ */
+async function shutdown() {
+  await prisma.$disconnect();
+  process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
