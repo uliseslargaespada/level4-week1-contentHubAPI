@@ -1,21 +1,28 @@
 /**
  * Posts repository backed by Prisma.
  *
- * @param {import('@prisma/client').PrismaClient} prisma
+ * NOTE:
+ * This layer does NOT decide HTTP status codes.
+ * It returns data and special markers where needed.
+ *
+ * @param {import('../../generated/prisma/index.js').PrismaClient} prisma
  */
 export function createPostsRepo(prisma) {
   return {
     /**
      * List posts with pagination.
      *
-     * @param {{ limit?: number, offset?: number }} params
+     * @param {{ limit?: number, offset?: number, includeCounts?: boolean }} params
      */
-    async list({ limit = 20, offset = 0 } = {}) {
+    async list({ limit = 20, offset = 0, includeCounts = false } = {}) {
+      const include = includeCounts ? { _count: { select: { comments: true } } } : undefined;
+
       const [items, total] = await Promise.all([
         prisma.post.findMany({
           skip: offset,
           take: limit,
           orderBy: { createdAt: 'desc' },
+          include,
         }),
         prisma.post.count(),
       ]);
@@ -24,12 +31,44 @@ export function createPostsRepo(prisma) {
     },
 
     /**
-     * Get a post by id.
+     * Get a post by id (no includes).
      *
      * @param {string} id
      */
     async getById(id) {
       return prisma.post.findUnique({ where: { id } });
+    },
+
+    /**
+     * Get a post by id with optional includes.
+     *
+     * @param {string} id
+     * @param {{ includeAuthor?: boolean, includeComments?: boolean }} options
+     */
+    async getByIdWithIncludes(id, { includeAuthor = false, includeComments = false } = {}) {
+      const include = {};
+
+      if (includeAuthor) {
+        include.author = {
+          select: { id: true, name: true, email: true, createdAt: true },
+        };
+      }
+
+      if (includeComments) {
+        include.comments = {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            author: {
+              select: { id: true, name: true, email: true, createdAt: true },
+            },
+          },
+        };
+      }
+
+      return prisma.post.findUnique({
+        where: { id },
+        include: Object.keys(include).length ? include : undefined,
+      });
     },
 
     /**

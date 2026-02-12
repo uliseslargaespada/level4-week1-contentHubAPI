@@ -1,6 +1,7 @@
 import { notFound, forbidden } from '#utils/httpErrors';
 import { ensureBodyFields } from '#utils/guard';
 import { parsePagination } from '#utils/pagination';
+import { parseBoolean, parseCsvSet } from '#utils/queryParams';
 
 /**
  * GET /posts
@@ -8,8 +9,10 @@ import { parsePagination } from '#utils/pagination';
 export async function listPosts(req, res) {
   const { posts } = res.locals.repos;
 
+  const includeCounts = parseBoolean(req.query.includeCounts);
+
   const { limit, offset } = parsePagination(req.query);
-  const result = await posts.list({ limit, offset });
+  const result = await posts.list({ limit, offset, includeCounts });
 
   return res.ok(result.items, {
     pagination: { limit, offset, total: result.total },
@@ -25,7 +28,15 @@ export async function getPost(req, res) {
   // Get an id from the requests
   const id = req.params.id;
 
-  const post = await posts.getById(id);
+  const include = parseCsvSet(req.query.include);
+
+  const includeAuthor = include.has('author');
+  const includeComments = include.has('comments');
+
+  const post = await posts.getByIdWithIncludes(id, {
+    includeAuthor,
+    includeComments,
+  });
 
   if (!post) {
     throw notFound('Post not found');
