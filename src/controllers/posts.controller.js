@@ -1,15 +1,18 @@
 import { notFound, forbidden } from '#utils/httpErrors';
 import { ensureBodyFields } from '#utils/guard';
 import { parsePagination } from '#utils/pagination';
+import { parseBoolean, parseCsvSet } from '#utils/queryParams';
 
 /**
  * GET /posts
  */
-export function listPosts(req, res) {
+export async function listPosts(req, res) {
   const { posts } = res.locals.repos;
 
+  const includeCounts = parseBoolean(req.query.includeCounts);
+
   const { limit, offset } = parsePagination(req.query);
-  const result = posts.list({ limit, offset });
+  const result = await posts.list({ limit, offset, includeCounts });
 
   return res.ok(result.items, {
     pagination: { limit, offset, total: result.total },
@@ -19,13 +22,21 @@ export function listPosts(req, res) {
 /**
  * GET /posts/:id
  */
-export function getPost(req, res) {
+export async function getPost(req, res) {
   const { posts } = res.locals.repos;
 
   // Get an id from the requests
-  const id = Number(req.params.id);
+  const id = req.params.id;
 
-  const post = posts.getById(id);
+  const include = parseCsvSet(req.query.include);
+
+  const includeAuthor = include.has('author');
+  const includeComments = include.has('comments');
+
+  const post = await posts.getByIdWithIncludes(id, {
+    includeAuthor,
+    includeComments,
+  });
 
   if (!post) {
     throw notFound('Post not found');
@@ -37,26 +48,27 @@ export function getPost(req, res) {
 /**
  * POST /posts (AUTH REQUIRED)
  */
-export function createPost(req, res) {
+export async function createPost(req, res) {
   const { posts } = res.locals.repos;
   ensureBodyFields(req.body, ['title', 'body']);
 
   const { title, body } = req.body ?? {};
 
-  const created = posts.create({ title, body, authorId: req.user.id });
+  const created = await posts.create({ title, body, authorId: req.user.id });
+
   return res.status(201).json({ data: created });
 }
 
 /**
  * PUT /posts/:id (AUTH + OWNER)
  */
-export function updatePost(req, res) {
+export async function updatePost(req, res) {
   const { posts } = res.locals.repos;
-  const id = Number(req.params.id);
+  const id = req.params.id;
 
   ensureBodyFields(req.body, ['title', 'body']);
 
-  const updated = posts.update({
+  const updated = await posts.update({
     id,
     title: req.body.title,
     body: req.body.body,
@@ -72,11 +84,11 @@ export function updatePost(req, res) {
 /**
  * DELETE /posts/:id (AUTH + OWNER)
  */
-export function deletePost(req, res) {
+export async function deletePost(req, res) {
   const { posts } = res.locals.repos;
-  const id = Number(req.params.id);
+  const id = req.params.id;
 
-  const result = posts.delete({ id, authorId: req.user.id });
+  const result = await posts.delete({ id, authorId: req.user.id });
 
   if (result === null) throw notFound('Post not found');
   if (result === 'forbidden') throw forbidden('You do not own this post');

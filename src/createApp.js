@@ -2,7 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import { errorHandler } from '#middleware/errorHandler';
+import { createErrorHandler } from '#middleware/errorHandler';
 import { notFoundHandler } from '#middleware/notFoundHandler';
 import { respond } from '#middleware/respond';
 
@@ -56,7 +56,7 @@ export function createApp({ repos, config = {} }) {
   app.use(notFoundHandler);
 
   // Error handling middleware must be last (4 args signature)
-  app.use(errorHandler);
+  app.use(createErrorHandler);
 
   return app;
 }
