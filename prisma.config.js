@@ -4,10 +4,13 @@ import 'dotenv/config';
 import { defineConfig, env } from 'prisma/config';
 
 export default defineConfig({
+  // State of the database
   schema: 'prisma/schema.prisma',
+  // Updates on the database
   migrations: {
     path: 'prisma/migrations',
   },
+  // The place where the data lives
   datasource: {
     url: env('DATABASE_URL'),
   },
